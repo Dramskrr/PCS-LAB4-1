@@ -1,3 +1,3 @@
 #!/bin/bash
 
-g++ main.cpp -o main
+g++ main_serial.cpp -o main_serial

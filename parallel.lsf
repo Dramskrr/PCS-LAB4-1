@@ -2,13 +2,7 @@
 
 export ARRAY_SIZE=50000
 export RUNS=25
-export HW_THREADS=12
+export THREADS=1
+export BLOCKS=1
 
-#BSUB -J LAB3-2          
-#BSUB -W 00:20             
-#BSUB -n 12
-#BSUB -oo logs/output_1.out
-#BSUB -oo logs/output_12.out
-#BSUB -eo logs/error_12.err
-module load mpi/openmpi-x86_64
-mpirun --use-hwthread-cpus -np $HW_THREADS ./main
+./main_parallel
