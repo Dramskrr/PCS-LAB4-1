@@ -3,7 +3,6 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <mpi.h>
 #include <string.h>
 #include <time.h>
 #include <stdbool.h>
@@ -98,7 +97,9 @@ int main(int argc, char** argv) {
         int* int_array = NULL;
         int_array = CreateArray(ARRAY_SIZE);
 
-        clock_gettime(CLOCK_REALTIME, &end);
+        clock_gettime(CLOCK_REALTIME, &begin); // Начало таймера
+
+        clock_gettime(CLOCK_REALTIME, &end); // Конец таймера
         exec_time += (double)(end.tv_sec - begin.tv_sec) + (double)(end.tv_nsec - begin.tv_nsec)/1e9;
 
         free(int_array);
