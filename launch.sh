@@ -8,7 +8,6 @@ export BLOCKS_CONFIG=1
 sed -i "3,+0 s|.*|export ARRAY_SIZE=$ARRAY_SIZE_CONFIG|g" serial.lsf
 sed -i "4,+0 s|.*|export RUNS=$RUNS_CONFIG|g" serial.lsf
 
-
 sed -i "3,+0 s|.*|export ARRAY_SIZE=$ARRAY_SIZE_CONFIG|g" parallel.lsf
 sed -i "4,+0 s|.*|export RUNS=$RUNS_CONFIG|g" parallel.lsf
 sed -i "5,+0 s|.*|export THREADS=$THREADS_CONFIG|g" parallel.lsf

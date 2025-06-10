@@ -1,0 +1,219 @@
+//#include <limits.h>
+//#include <stdint.h>
+//#include <asm-generic/errno.h>
+#include <cstdlib>
+#include <stdio.h>
+#include <stdlib.h>
+//#include <string.h>
+#include <time.h>
+#include <cuda_runtime.h>
+//#include <stdbool.h>
+
+const int DEFAULT_ARRAY_SIZE = 100000000;
+const int DEFAULT_RUNS = 20;
+const int DEFAULT_THREADS = 256;
+const int DEFAULT_BLOCKS = 8;
+
+// Код взят из
+// https://developer.download.nvidia.com/assets/cuda/files/reduction.pdf
+// Очень интересная и полезная презентация
+template <unsigned int blockSize>
+__device__ void warpReduce(volatile int *sdata, unsigned int tid) {
+    if (blockSize >= 64) sdata[tid] += sdata[tid + 32];
+    if (blockSize >= 32) sdata[tid] += sdata[tid + 16];
+    if (blockSize >= 16) sdata[tid] += sdata[tid + 8];
+    if (blockSize >= 8) sdata[tid] += sdata[tid + 4];
+    if (blockSize >= 4) sdata[tid] += sdata[tid + 2];
+    if (blockSize >= 2) sdata[tid] += sdata[tid + 1];
+}
+
+template <unsigned int blockSize>
+__global__ void reduce6(int *g_idata, int *g_odata, unsigned int n) {
+    extern __shared__ int sdata[];
+    unsigned int tid = threadIdx.x;
+    unsigned int i = blockIdx.x*(blockSize*2) + tid;
+    unsigned int gridSize = blockSize*2*gridDim.x;
+    sdata[tid] = 0;
+    while (i < n) { sdata[tid] += g_idata[i] + g_idata[i+blockSize]; i += gridSize; }
+    __syncthreads();
+    if (blockSize >= 512) { if (tid < 256) { sdata[tid] += sdata[tid + 256]; } __syncthreads(); }
+    if (blockSize >= 256) { if (tid < 128) { sdata[tid] += sdata[tid + 128]; } __syncthreads(); }
+    if (blockSize >= 128) { if (tid < 64) { sdata[tid] += sdata[tid + 64]; } __syncthreads(); }
+    if (tid < 32) warpReduce(sdata, tid);
+    if (tid == 0) g_odata[blockIdx.x] = sdata[0];
+}
+
+float* CreateArray( const int SIZE) {
+    float* float_array = (float*) malloc(sizeof(float) * SIZE);
+    for (int i = 0; i < SIZE; i++) {
+        float_array[i] = rand()%100;
+    }
+    return float_array;
+}
+
+void PrintArray(const int* array, const int SIZE) {
+    for (int i = 0; i < SIZE; i++) {
+        printf("%d ",array[i]);
+    }
+    printf("\n");
+}
+
+int GetEnvArraySize() {
+    char* array_size_char = getenv("ARRAY_SIZE");
+    int array_size_int = DEFAULT_ARRAY_SIZE;
+    if (array_size_char != NULL) {
+        array_size_int = atoi(array_size_char);
+    } else {
+        printf(
+            "Переменная среды ARRAY_SIZE не получена, "
+            "используем значение по умолчанию: %d \n", DEFAULT_ARRAY_SIZE
+        );
+    }
+    return array_size_int;
+}
+
+int GetEnvThreads() {
+    char* thread_char = getenv("THREADS");
+    int thread_int = DEFAULT_THREADS;
+    if (thread_char != NULL) {
+        thread_int = atoi(thread_char);
+    } else {
+        printf(
+            "Переменная среды THREADS не получена, "
+            "используем значение по умолчанию: %d \n", DEFAULT_THREADS
+        );
+    }
+    return thread_int;
+}
+
+int GetEnvBlocks() {
+    char* block_char = getenv("BLOCKS");
+    int block_int = DEFAULT_BLOCKS;
+    if (block_char != NULL) {
+        block_int = atoi(block_char);
+    } else {
+        printf(
+            "Переменная среды BLOCKS не получена, "
+            "используем значение по умолчанию: %d \n", DEFAULT_BLOCKS
+        );
+    }
+    return block_int;
+}
+
+int GetEnvRuns() {
+    char* runs_char = getenv("RUNS");
+    int runs_int = DEFAULT_RUNS;
+    if (runs_char != NULL) {
+        runs_int = atoi(runs_char);
+    } else {
+        printf(
+            "Переменная среды RUNS не получена, "
+            "используем значение по умолчанию: %d \n", DEFAULT_RUNS
+        );
+    }
+    return runs_int;
+}
+
+void CheckCudaError(cudaError_t err){
+    if (err != cudaSuccess) {
+        fprintf(stderr, "Fail (error code %s)!\n", cudaGetErrorString(err));
+        exit(EXIT_FAILURE);
+    }
+}
+
+int main(int argc, char** argv) {
+    // Error code to check return values for CUDA calls
+    cudaError_t err = cudaSuccess;
+
+    srand(time(0));
+    //srand(1);
+    const int ARRAY_SIZE = GetEnvArraySize();
+    const int RUNS = GetEnvRuns();
+    const int THREADS = GetEnvThreads();
+    const int BLOCKS = GetEnvBlocks();
+
+    printf("Размер массива: %d\n", ARRAY_SIZE);
+    printf("Выполнений: %d\n", RUNS);
+    printf("Потоков в блоке: %d\n", THREADS);
+    printf("Блоков: %d\n", BLOCKS);
+    
+    // Таймер
+    struct timespec begin, end;
+    double exec_time = 0.0;
+    double data_allocation_time = 0.0;
+
+    // Цикл выполнения задачи и подсчёта времени её выполнения
+    for (int i = 0; i < RUNS; i++) {
+
+        // Массив хоста с данными
+        float* host_float_array = NULL;
+        host_float_array = CreateArray(ARRAY_SIZE);
+
+        float* host_result_float_array = NULL;
+        host_result_float_array = (float*) malloc(sizeof(float) * ARRAY_SIZE);
+
+        clock_gettime(CLOCK_REALTIME, &begin); // Начало таймера
+
+        // Выделение глобальной памяти под массив, который будет передан GPU
+        float* device_float_array = NULL;
+        err = cudaMalloc((void **)&device_float_array, ARRAY_SIZE);
+        CheckCudaError(err);
+
+        // Выделение глобальной памяти под массив результат, который будет передан GPU
+        float* device_result_float_array = NULL;
+        err = cudaMalloc((void **)&device_float_array, ARRAY_SIZE);
+        CheckCudaError(err);
+        
+        //Копирование массива в GPU
+        err = cudaMemcpy(device_float_array,
+                         host_float_array,
+                         ARRAY_SIZE,
+                         cudaMemcpyHostToDevice
+                        );
+        CheckCudaError(err);
+
+        clock_gettime(CLOCK_REALTIME, &end); // Конец таймера
+        data_allocation_time += (double)(end.tv_sec - begin.tv_sec) + (double)(end.tv_nsec - begin.tv_nsec)/1e9;
+        clock_gettime(CLOCK_REALTIME, &begin); // Начало таймера
+        
+        // Выполнение задачи
+        reduce6<<<BLOCKS, THREADS>>>(device_float_array, device_result_float_array, ARRAY_SIZE);
+        err = cudaGetLastError();
+        CheckCudaError(err);
+
+        clock_gettime(CLOCK_REALTIME, &end); // Конец таймера
+        exec_time += (double)(end.tv_sec - begin.tv_sec) + (double)(end.tv_nsec - begin.tv_nsec)/1e9;
+        clock_gettime(CLOCK_REALTIME, &begin); // Начало таймера
+        
+        // Берём результат от GPU
+        err = cudaMemcpy(host_result_float_array,
+                         device_result_float_array,
+                         ARRAY_SIZE,
+                         cudaMemcpyDeviceToHost
+                        );
+        CheckCudaError(err);
+        
+        // Освобождаем глобальную память GPU
+        err = cudaFree(device_float_array);
+        CheckCudaError(err);
+        err = cudaFree(device_result_float_array);
+        CheckCudaError(err);
+
+        clock_gettime(CLOCK_REALTIME, &end); // Конец таймера
+        data_allocation_time += (double)(end.tv_sec - begin.tv_sec) + (double)(end.tv_nsec - begin.tv_nsec)/1e9;
+
+        free(host_float_array);
+        free(host_result_float_array);
+    }
+
+    double mean_data_alloc_time = data_allocation_time / RUNS;
+    double mean_exec_time = exec_time / RUNS;
+    printf("Общее время выделения памяти и передачи данных: %f сек. \n", data_allocation_time);
+    printf("Среднее время выделения памяти и передачи данных: %f сек. \n\n", mean_data_alloc_time);
+    printf("Общее время выполнения кода на GPU: %f сек. \n", exec_time);
+    printf("Среднее время выполнения кода на GPU: %f сек. \n\n", mean_exec_time );
+    printf("Общее время выполнения: %f сек. \n", exec_time + data_allocation_time);
+    printf("Среднее время выполнения: %f сек.", mean_exec_time + mean_data_alloc_time);
+
+    return 0;
+}

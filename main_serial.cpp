@@ -12,11 +12,11 @@ const int DEFAULT_ARRAY_SIZE = 1000000;
 const int DEFAULT_RUNS = 100;
 
 float* CreateArray(const int SIZE) {
-    float* int_array = (float*) malloc(sizeof(float) * SIZE);
+    float* float_array = (float*) malloc(sizeof(float) * SIZE);
     for (int i = 0; i < SIZE; i++) {
-        int_array[i] = rand()%100;
+        float_array[i] = rand()%100;
     }
-    return int_array;
+    return float_array;
 }
 
 void PrintArray(const float* array, const int SIZE) {
