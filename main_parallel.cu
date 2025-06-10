@@ -18,7 +18,7 @@ const int DEFAULT_BLOCKS = 8;
 // https://developer.download.nvidia.com/assets/cuda/files/reduction.pdf
 // Очень интересная и полезная презентация
 template <unsigned int blockSize>
-__device__ void warpReduce(volatile int *sdata, unsigned int tid) {
+__device__ void warpReduce(volatile float *sdata, int tid) {
     if (blockSize >= 64) sdata[tid] += sdata[tid + 32];
     if (blockSize >= 32) sdata[tid] += sdata[tid + 16];
     if (blockSize >= 16) sdata[tid] += sdata[tid + 8];
@@ -28,8 +28,8 @@ __device__ void warpReduce(volatile int *sdata, unsigned int tid) {
 }
 
 template <unsigned int blockSize>
-__global__ void reduce6(int *g_idata, int *g_odata, unsigned int n) {
-    extern __shared__ int sdata[];
+__global__ void reduce6(float *g_idata, float *g_odata, int n) {
+    extern __shared__ float sdata[];
     unsigned int tid = threadIdx.x;
     unsigned int i = blockIdx.x*(blockSize*2) + tid;
     unsigned int gridSize = blockSize*2*gridDim.x;
