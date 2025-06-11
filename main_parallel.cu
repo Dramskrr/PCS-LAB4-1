@@ -121,10 +121,10 @@ void CheckCudaError(cudaError_t err){
     }
 }
 
-float SumElementsOfArray(const float* array, const int SIZE) {
+float SumElementsOfArray(const float* array, const long int SIZE) {
     float result = 0;
-    for (int i = 0; i < SIZE; i++) {
-        result += array[0];
+    for (long int i = 0; i < SIZE; i++) {
+        result += array[i];
     }
     return result;
 }
@@ -231,13 +231,14 @@ int main(int argc, char** argv) {
         CheckCudaError(err);
         printf("Память очищена\n");
 
-        float final_res = SumElementsOfArray(host_result_float_array, BLOCKS);
+        float final_device_res = SumElementsOfArray(host_result_float_array, BLOCKS);
 
         clock_gettime(CLOCK_REALTIME, &end); // Конец таймера
         data_allocation_time += (double)(end.tv_sec - begin.tv_sec) + (double)(end.tv_nsec - begin.tv_nsec)/1e9;
         
-        PrintArray(host_result_float_array, BLOCKS+2);
-        float diff = SumElementsOfArray(host_float_array,ARRAY_SIZE) - final_res;
+        PrintArray(host_result_float_array, BLOCKS+1);
+        float = final_host_res = SumElementsOfArray(host_result_float_array, ARRAY_SIZE);
+        float diff = final_host_res - final_res;
         printf("Погрешность между вычислением на CPU и GPU (CPU - GPU): %f\n", diff);
 
         free(host_float_array);

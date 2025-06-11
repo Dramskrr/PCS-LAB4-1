@@ -54,10 +54,10 @@ int GetEnvRuns() {
     return runs_int;
 }
 
-float SumElementsOfArray(const float* array, const int SIZE) {
+float SumElementsOfArray(const float* array, const long int SIZE) {
     float result = 0;
-    for (int i = 0; i < SIZE; i++) {
-        result += array[0];
+    for (long int i = 0; i < SIZE; i++) {
+        result += array[i];
     }
     return result;
 }
