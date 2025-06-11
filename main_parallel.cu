@@ -145,13 +145,16 @@ int main(int argc, char** argv) {
     const long int ARRAY_SIZE = GetEnvArraySize();
     const int RUNS = GetEnvRuns();
     const int THREADS = GetEnvThreads();
-    const int BLOCKS = GetEnvBlocks();
+    //const int BLOCKS = GetEnvBlocks();
+    const int BLOCKS = (ARRAY_SIZE + (2 * THREADS) - 1) / (2 * THREADS);
 
     printf("\n\nПараллельная программа\n");
     printf("Размер массива: %ld\n", ARRAY_SIZE);
     printf("Выполнений: %d\n", RUNS);
     printf("Потоков в блоке: %d\n", THREADS);
-    printf("Блоков: %d\n", BLOCKS);
+    printf("Блоков (ДЛЯ ДАННОГО ЗАДАНИЯ НАСТРОЙКА КОЛ-ВА БЛОКОВ ИГНОРИРУЕТСЯ, ПРОГРАММА САМА ВЫСЧИТАЛА НУЖНОЕ КОЛИЧЕСТВО БЛОКОВ): %d\n", BLOCKS);
+
+    int result_array_size = (ARRAY_SIZE + (THREADS-1)) / THREADS;
     
     // Таймер
     struct timespec begin, end;
@@ -166,7 +169,7 @@ int main(int argc, char** argv) {
         host_float_array = CreateArray(ARRAY_SIZE);
 
         float* host_result_float_array = NULL;
-        host_result_float_array = (float*) malloc(sizeof(float) * ARRAY_SIZE);
+        host_result_float_array = (float*) malloc(sizeof(float) * result_array_size);
 
         clock_gettime(CLOCK_REALTIME, &begin); // Начало таймера
 
@@ -178,14 +181,14 @@ int main(int argc, char** argv) {
 
         // Выделение глобальной памяти под массив результат, который будет передан GPU
         float* device_result_float_array = NULL;
-        err = cudaMalloc(&device_result_float_array, ARRAY_SIZE * sizeof(float));
+        err = cudaMalloc(&device_result_float_array, sizeof(float) * result_array_size);
         CheckCudaError(err);
         printf("Глоб массив результата выделен\n");
         
         //Копирование массива в GPU
         err = cudaMemcpy(device_float_array,
                          host_float_array,
-                         ARRAY_SIZE,
+                         ARRAY_SIZE * sizeof(float),
                          cudaMemcpyHostToDevice
                         );
         CheckCudaError(err);
@@ -218,7 +221,7 @@ int main(int argc, char** argv) {
         // Берём результат от GPU
         err = cudaMemcpy(host_result_float_array,
                          device_result_float_array,
-                         ARRAY_SIZE,
+                         result_array_size * sizeof(float),
                          cudaMemcpyDeviceToHost
                         );
         CheckCudaError(err);
@@ -231,12 +234,12 @@ int main(int argc, char** argv) {
         CheckCudaError(err);
         printf("Память очищена\n");
 
-        float final_device_res = SumElementsOfArray(host_result_float_array, BLOCKS);
+        float final_device_res = SumElementsOfArray(host_result_float_array, result_array_size);
 
         clock_gettime(CLOCK_REALTIME, &end); // Конец таймера
         data_allocation_time += (double)(end.tv_sec - begin.tv_sec) + (double)(end.tv_nsec - begin.tv_nsec)/1e9;
         
-        PrintArray(host_result_float_array, BLOCKS+1);
+        PrintArray(host_result_float_array, result_array_size);
         float final_host_res = SumElementsOfArray(host_float_array, ARRAY_SIZE);
         float diff = final_host_res - final_device_res;
         printf("Погрешность между вычислением на CPU и GPU (CPU - GPU): %f\n", diff);
@@ -249,8 +252,8 @@ int main(int argc, char** argv) {
 
     double mean_data_alloc_time = data_allocation_time / RUNS;
     double mean_exec_time = exec_time / RUNS;
-    printf("Общее время выделения памяти и передачи данных: %f сек. \n", data_allocation_time);
-    printf("Среднее время выделения памяти и передачи данных: %f сек. \n\n", mean_data_alloc_time);
+    printf("Общее время выделения памяти, передачи данных и финального счёта: %f сек. \n", data_allocation_time);
+    printf("Среднее время выделения памяти передачи данных и финального счёта: %f сек. \n\n", mean_data_alloc_time);
     printf("Общее время выполнения кода на GPU: %f сек. \n", exec_time);
     printf("Среднее время выполнения кода на GPU: %f сек. \n\n", mean_exec_time );
     printf("Общее время выполнения: %f сек. \n", exec_time + data_allocation_time);
