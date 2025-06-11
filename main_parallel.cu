@@ -159,13 +159,13 @@ int main(int argc, char** argv) {
         float* device_float_array = NULL;
         err = cudaMalloc((void **)&device_float_array, ARRAY_SIZE);
         CheckCudaError(err);
-        printf("Глоб массив выделен");
+        //printf("Глоб массив выделен");
 
         // Выделение глобальной памяти под массив результат, который будет передан GPU
         float* device_result_float_array = NULL;
         err = cudaMalloc((void **)&device_result_float_array, ARRAY_SIZE);
         CheckCudaError(err);
-        printf("Глоб массив результата выделен");
+        //printf("Глоб массив результата выделен");
         
         //Копирование массива в GPU
         err = cudaMemcpy(device_float_array,
@@ -174,7 +174,7 @@ int main(int argc, char** argv) {
                          cudaMemcpyHostToDevice
                         );
         CheckCudaError(err);
-        printf("Глоб массив скопирован");
+        //printf("Глоб массив скопирован");
 
         clock_gettime(CLOCK_REALTIME, &end); // Конец таймера
         data_allocation_time += (double)(end.tv_sec - begin.tv_sec) + (double)(end.tv_nsec - begin.tv_nsec)/1e9;
@@ -194,7 +194,7 @@ int main(int argc, char** argv) {
         }
         err = cudaGetLastError();
         CheckCudaError(err);
-        printf("Задача выполнена");
+        //printf("Задача выполнена");
 
         clock_gettime(CLOCK_REALTIME, &end); // Конец таймера
         exec_time += (double)(end.tv_sec - begin.tv_sec) + (double)(end.tv_nsec - begin.tv_nsec)/1e9;
@@ -207,14 +207,14 @@ int main(int argc, char** argv) {
                          cudaMemcpyDeviceToHost
                         );
         CheckCudaError(err);
-        printf("Результат получен");
+        //printf("Результат получен");
         
         // Освобождаем глобальную память GPU
         err = cudaFree(device_float_array);
         CheckCudaError(err);
         err = cudaFree(device_result_float_array);
         CheckCudaError(err);
-        printf("Память очищена");
+        //printf("Память очищена");
 
         clock_gettime(CLOCK_REALTIME, &end); // Конец таймера
         data_allocation_time += (double)(end.tv_sec - begin.tv_sec) + (double)(end.tv_nsec - begin.tv_nsec)/1e9;
