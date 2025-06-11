@@ -1,7 +1,7 @@
 #!/bin/bash
 
 export ARRAY_SIZE_CONFIG=100000000000
-export RUNS_CONFIG=25
+export RUNS_CONFIG=5
 export THREADS_CONFIG=1
 export BLOCKS_CONFIG=1
 

@@ -9,7 +9,7 @@
 #include <cuda_runtime.h>
 //#include <stdbool.h>
 
-const int DEFAULT_ARRAY_SIZE = 100000000;
+const long int DEFAULT_ARRAY_SIZE = 100000000;
 const int DEFAULT_RUNS = 20;
 const int DEFAULT_THREADS = 256;
 const int DEFAULT_BLOCKS = 8;
@@ -28,10 +28,10 @@ __device__ void warpReduce(volatile float *sdata, int tid) {
 }
 
 template <unsigned int blockSize>
-__global__ void reduce6(float *g_idata, float *g_odata, const int n) {
+__global__ void reduce6(float *g_idata, float *g_odata, const long int n) {
     extern __shared__ float sdata[];
     unsigned int tid = threadIdx.x;
-    unsigned int i = blockIdx.x*(blockSize*2) + tid;
+    unsigned long int i = blockIdx.x*(blockSize*2) + tid;
     unsigned int gridSize = blockSize*2*gridDim.x;
     sdata[tid] = 0;
     while (i < n) { sdata[tid] += g_idata[i] + g_idata[i+blockSize]; i += gridSize; }
@@ -58,15 +58,15 @@ void PrintArray(const int* array, const int SIZE) {
     printf("\n");
 }
 
-int GetEnvArraySize() {
+long int GetEnvArraySize() {
     char* array_size_char = getenv("ARRAY_SIZE");
-    int array_size_int = DEFAULT_ARRAY_SIZE;
+    long int array_size_int = DEFAULT_ARRAY_SIZE;
     if (array_size_char != NULL) {
         array_size_int = atoi(array_size_char);
     } else {
         printf(
             "Переменная среды ARRAY_SIZE не получена, "
-            "используем значение по умолчанию: %d \n", DEFAULT_ARRAY_SIZE
+            "используем значение по умолчанию: %ld \n", DEFAULT_ARRAY_SIZE
         );
     }
     return array_size_int;
@@ -127,13 +127,13 @@ int main(int argc, char** argv) {
 
     srand(time(0));
     //srand(1);
-    const int ARRAY_SIZE = GetEnvArraySize();
+    const long int ARRAY_SIZE = GetEnvArraySize();
     const int RUNS = GetEnvRuns();
     const int THREADS = GetEnvThreads();
     const int BLOCKS = GetEnvBlocks();
 
     printf("\n\nПараллельная программа\n");
-    printf("Размер массива: %d\n", ARRAY_SIZE);
+    printf("Размер массива: %ld\n", ARRAY_SIZE);
     printf("Выполнений: %d\n", RUNS);
     printf("Потоков в блоке: %d\n", THREADS);
     printf("Блоков: %d\n", BLOCKS);
