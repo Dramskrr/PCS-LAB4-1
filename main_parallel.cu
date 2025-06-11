@@ -152,7 +152,8 @@ int main(int argc, char** argv) {
     printf("Размер массива: %ld\n", ARRAY_SIZE);
     printf("Выполнений: %d\n", RUNS);
     printf("Потоков в блоке: %d\n", THREADS);
-    printf("Блоков (ДЛЯ ДАННОГО ЗАДАНИЯ НАСТРОЙКА КОЛ-ВА БЛОКОВ ИГНОРИРУЕТСЯ, ПРОГРАММА САМА ВЫСЧИТАЛА НУЖНОЕ КОЛИЧЕСТВО БЛОКОВ): %d\n", BLOCKS);
+    printf("Блоков (ДЛЯ ДАННОГО ЗАДАНИЯ НАСТРОЙКА КОЛ-ВА БЛОКОВ ИГНОРИРУЕТСЯ,\n\
+            ПРОГРАММА САМА ВЫСЧИТАЛА НУЖНОЕ КОЛИЧЕСТВО БЛОКОВ НА ОСНОВЕ КОЛ-ВА ПОТОКОВ): %d\n", BLOCKS);
 
     int result_array_size = (ARRAY_SIZE + (THREADS-1)) / THREADS;
     
@@ -239,7 +240,8 @@ int main(int argc, char** argv) {
         clock_gettime(CLOCK_REALTIME, &end); // Конец таймера
         data_allocation_time += (double)(end.tv_sec - begin.tv_sec) + (double)(end.tv_nsec - begin.tv_nsec)/1e9;
         
-        PrintArray(host_result_float_array, result_array_size);
+        //PrintArray(host_result_float_array, result_array_size);
+        //FIXME почему-то финальный результат суммы хоста упирается в 32битный инт
         float final_host_res = SumElementsOfArray(host_float_array, ARRAY_SIZE);
         float diff = final_host_res - final_device_res;
         printf("Погрешность между вычислением на CPU и GPU (CPU - GPU): %f\n", diff);
