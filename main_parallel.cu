@@ -240,6 +240,8 @@ int main(int argc, char** argv) {
         float final_host_res = SumElementsOfArray(host_float_array, ARRAY_SIZE);
         float diff = final_host_res - final_device_res;
         printf("Погрешность между вычислением на CPU и GPU (CPU - GPU): %f\n", diff);
+        printf("сумма на CPU %f\n", final_host_res);
+        printf("сумма на GPU %f\n", final_device_res);
 
         free(host_float_array);
         free(host_result_float_array);
