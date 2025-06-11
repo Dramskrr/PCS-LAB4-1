@@ -121,6 +121,14 @@ void CheckCudaError(cudaError_t err){
     }
 }
 
+float SumElementsOfArray(const float* array, const int SIZE) {
+    float result = 0;
+    for (int i = 0; i < SIZE; i++) {
+        result += array[0];
+    }
+    return result;
+}
+
 int main(int argc, char** argv) {
     // Error code to check return values for CUDA calls
     cudaError_t err = cudaSuccess;
@@ -218,6 +226,13 @@ int main(int argc, char** argv) {
 
         clock_gettime(CLOCK_REALTIME, &end); // Конец таймера
         data_allocation_time += (double)(end.tv_sec - begin.tv_sec) + (double)(end.tv_nsec - begin.tv_nsec)/1e9;
+        
+        check_value = 
+        if (host_result_float_array[0] == SumElementsOfArray(host_float_array, ARRAY_SIZE)){
+            printf("Сумма правильная!");
+        } else {
+            printf("Сумма неправильная!")
+        }
 
         free(host_float_array);
         free(host_result_float_array);
