@@ -232,11 +232,11 @@ int main(int argc, char** argv) {
         printf("Память очищена\n");
 
         float final_res = SumElementsOfArray(host_result_float_array, BLOCKS);
-        PrintArray(host_result_float_array, BLOCKS+2)
 
         clock_gettime(CLOCK_REALTIME, &end); // Конец таймера
         data_allocation_time += (double)(end.tv_sec - begin.tv_sec) + (double)(end.tv_nsec - begin.tv_nsec)/1e9;
         
+        PrintArray(host_result_float_array, BLOCKS+2);
         float diff = SumElementsOfArray(host_float_array,ARRAY_SIZE) - final_res;
         printf("Погрешность между вычислением на CPU и GPU (CPU - GPU): %f\n", diff);
 
