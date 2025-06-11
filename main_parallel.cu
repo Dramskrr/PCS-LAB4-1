@@ -129,6 +129,13 @@ float SumElementsOfArray(const float* array, const int SIZE) {
     return result;
 }
 
+void PrintArray(const float* array, const int SIZE) {
+    for (int i = 0; i < SIZE; i++) {
+        printf("%f ",array[i]);
+    }
+    printf("\n");
+}
+
 int main(int argc, char** argv) {
     // Error code to check return values for CUDA calls
     cudaError_t err = cudaSuccess;
@@ -224,10 +231,8 @@ int main(int argc, char** argv) {
         CheckCudaError(err);
         printf("Память очищена\n");
 
-        float final_res = 0;
-        for (int i = 0; i < BLOCKS; i++) {
-            final_res += host_result_float_array[i];
-        }
+        float final_res = SumElementsOfArray(host_result_float_array, BLOCKS);
+        PrintArray(host_result_float_array, BLOCKS+2)
 
         clock_gettime(CLOCK_REALTIME, &end); // Конец таймера
         data_allocation_time += (double)(end.tv_sec - begin.tv_sec) + (double)(end.tv_nsec - begin.tv_nsec)/1e9;
