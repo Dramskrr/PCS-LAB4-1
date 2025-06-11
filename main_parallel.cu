@@ -224,15 +224,16 @@ int main(int argc, char** argv) {
         CheckCudaError(err);
         printf("Память очищена\n");
 
+        float final_res = 0;
+        for (int i = 0; i < BLOCKS; i++) {
+            final_res += host_result_float_array[i];
+        }
+
         clock_gettime(CLOCK_REALTIME, &end); // Конец таймера
         data_allocation_time += (double)(end.tv_sec - begin.tv_sec) + (double)(end.tv_nsec - begin.tv_nsec)/1e9;
         
-        check_value = 
-        if (host_result_float_array[0] == SumElementsOfArray(host_float_array, ARRAY_SIZE)){
-            printf("Сумма правильная!");
-        } else {
-            printf("Сумма неправильная!")
-        }
+        float diff = SumElementsOfArray(host_float_array,ARRAY_SIZE) - final_res;
+        printf("Погрешность между вычислением на CPU и GPU (CPU - GPU): %f\n", diff);
 
         free(host_float_array);
         free(host_result_float_array);
