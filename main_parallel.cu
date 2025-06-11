@@ -132,7 +132,7 @@ int main(int argc, char** argv) {
     const int THREADS = GetEnvThreads();
     const int BLOCKS = GetEnvBlocks();
 
-    printf("Размер массива: %d\n", ARRAY_SIZE);
+    printf("\nРазмер массива: %d\n", ARRAY_SIZE);
     printf("Выполнений: %d\n", RUNS);
     printf("Потоков в блоке: %d\n", THREADS);
     printf("Блоков: %d\n", BLOCKS);
