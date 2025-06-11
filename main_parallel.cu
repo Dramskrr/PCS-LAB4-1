@@ -237,8 +237,8 @@ int main(int argc, char** argv) {
         data_allocation_time += (double)(end.tv_sec - begin.tv_sec) + (double)(end.tv_nsec - begin.tv_nsec)/1e9;
         
         PrintArray(host_result_float_array, BLOCKS+1);
-        float = final_host_res = SumElementsOfArray(host_result_float_array, ARRAY_SIZE);
-        float diff = final_host_res - final_res;
+        float final_host_res = SumElementsOfArray(host_float_array, ARRAY_SIZE);
+        float diff = final_host_res - final_device_res;
         printf("Погрешность между вычислением на CPU и GPU (CPU - GPU): %f\n", diff);
 
         free(host_float_array);
