@@ -177,14 +177,24 @@ int main(int argc, char** argv) {
         clock_gettime(CLOCK_REALTIME, &begin); // Начало таймера
         
         // Выполнение задачи
-        reduce6<<<BLOCKS, THREADS>>>(device_float_array, device_result_float_array, ARRAY_SIZE);
+        switch (THREADS) {
+            case 512:
+                reduce6<512><<<BLOCKS, 512, 512 * sizeof(float)>>>(device_float_array, device_result_float_array, ARRAY_SIZE);
+                break;
+            case 256:
+                reduce6<256><<<BLOCKS, 256, 256 * sizeof(float)>>>(device_float_array, device_result_float_array, ARRAY_SIZE);
+                break;
+            case 128:
+                reduce6<128><<<BLOCKS, 128, 128 * sizeof(float)>>>(device_float_array, device_result_float_array, ARRAY_SIZE);
+                break;
+        }
         err = cudaGetLastError();
         CheckCudaError(err);
 
         clock_gettime(CLOCK_REALTIME, &end); // Конец таймера
         exec_time += (double)(end.tv_sec - begin.tv_sec) + (double)(end.tv_nsec - begin.tv_nsec)/1e9;
         clock_gettime(CLOCK_REALTIME, &begin); // Начало таймера
-        
+
         // Берём результат от GPU
         err = cudaMemcpy(host_result_float_array,
                          device_result_float_array,
