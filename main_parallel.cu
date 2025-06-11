@@ -132,7 +132,7 @@ int main(int argc, char** argv) {
     const int THREADS = GetEnvThreads();
     const int BLOCKS = GetEnvBlocks();
 
-    printf("\n\nПараллельная программа");
+    printf("\n\nПараллельная программа\n");
     printf("Размер массива: %d\n", ARRAY_SIZE);
     printf("Выполнений: %d\n", RUNS);
     printf("Потоков в блоке: %d\n", THREADS);
@@ -163,7 +163,7 @@ int main(int argc, char** argv) {
 
         // Выделение глобальной памяти под массив результат, который будет передан GPU
         float* device_result_float_array = NULL;
-        err = cudaMalloc((void **)&device_float_array, ARRAY_SIZE);
+        err = cudaMalloc((void **)&device_result_float_array, ARRAY_SIZE);
         CheckCudaError(err);
         printf("Глоб массив результата выделен");
         
