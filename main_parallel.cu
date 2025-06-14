@@ -201,6 +201,9 @@ int main(int argc, char** argv) {
         
         // Выполнение задачи
         switch (THREADS) {
+            case 1024:
+                reduce6<1024><<<BLOCKS, 1024, 1024 * sizeof(float)>>>(device_float_array, device_result_float_array, ARRAY_SIZE);
+                break;
             case 512:
                 reduce6<512><<<BLOCKS, 512, 512 * sizeof(float)>>>(device_float_array, device_result_float_array, ARRAY_SIZE);
                 break;
