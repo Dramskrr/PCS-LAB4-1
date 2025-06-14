@@ -8,15 +8,15 @@
 #include <time.h>
 //#include <stdbool.h>
 
-const long int DEFAULT_ARRAY_SIZE = 1000000;
+const long long int DEFAULT_ARRAY_SIZE = 1000000;
 const int DEFAULT_RUNS = 100;
 
-float* CreateArray(const long int SIZE) {
-    float* float_array = (float*) malloc(sizeof(float) * SIZE);
-    for (long int i = 0; i < SIZE; i++) {
-        float_array[i] = rand()%100;
+int* CreateArray( const long long int SIZE) {
+    int* llint_array = (int*) malloc(sizeof(int) * SIZE);
+    for (int i = 0; i < SIZE; i++) {
+        llint_array[i] = rand()%100;
     }
-    return float_array;
+    return llint_array;
 }
 
 void PrintArray(const float* array, const int SIZE) {
@@ -26,19 +26,20 @@ void PrintArray(const float* array, const int SIZE) {
     printf("\n");
 }
 
-long int GetEnvArraySize() {
+long long int GetEnvArraySize() {
     char* array_size_char = getenv("ARRAY_SIZE");
-    long int array_size_int = DEFAULT_ARRAY_SIZE;
+    long long int array_size_int = DEFAULT_ARRAY_SIZE;
     if (array_size_char != NULL) {
-        array_size_int = atoi(array_size_char);
+        array_size_int = atoll(array_size_char);
     } else {
         printf(
             "Переменная среды ARRAY_SIZE не получена, "
-            "используем значение по умолчанию: %ld \n", DEFAULT_ARRAY_SIZE
+            "используем значение по умолчанию: %lld \n", DEFAULT_ARRAY_SIZE
         );
     }
     return array_size_int;
 }
+
 
 int GetEnvRuns() {
     char* runs_char = getenv("RUNS");
@@ -54,9 +55,9 @@ int GetEnvRuns() {
     return runs_int;
 }
 
-float SumElementsOfArray(const float* array, const long int SIZE) {
-    float result = 0;
-    for (long int i = 0; i < SIZE; i++) {
+long long int SumElementsOfArray(const int* array, const long long int SIZE) {
+    long long int result = 0;
+    for (long long int i = 0; i < SIZE; i++) {
         result += array[i];
     }
     return result;
@@ -66,10 +67,10 @@ int main(int argc, char** argv) {
     printf("Последовательная программа\n");
     srand(time(0));
     //srand(1);
-    const long int ARRAY_SIZE = GetEnvArraySize();
+    const long long int ARRAY_SIZE = GetEnvArraySize();
     const int RUNS = GetEnvRuns();
     
-    printf("Размер массива: %ld\n", ARRAY_SIZE);
+    printf("Размер массива: %lld\n", ARRAY_SIZE);
     printf("Выполнений: %d\n", RUNS);
 
     // Таймер
@@ -79,7 +80,7 @@ int main(int argc, char** argv) {
     // Цикл выполнения задачи и подсчёта времени её выполнения
     for (int i = 0; i < RUNS; i++) {
 
-        float* float_array = NULL;
+        int* float_array = NULL;
         float_array = CreateArray(ARRAY_SIZE);
 
         clock_gettime(CLOCK_REALTIME, &begin); // Начало таймера

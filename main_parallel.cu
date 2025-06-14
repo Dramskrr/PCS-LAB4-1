@@ -9,7 +9,7 @@
 #include <cuda_runtime.h>
 //#include <stdbool.h>
 
-const long int DEFAULT_ARRAY_SIZE = 100000000;
+const long long int DEFAULT_ARRAY_SIZE = 100000000;
 const int DEFAULT_RUNS = 2;
 const int DEFAULT_THREADS = 256;
 const int DEFAULT_BLOCKS = 8;
@@ -18,7 +18,7 @@ const int DEFAULT_BLOCKS = 8;
 // https://developer.download.nvidia.com/assets/cuda/files/reduction.pdf
 // Очень интересная и полезная презентация
 template <unsigned int blockSize>
-__device__ void warpReduce(volatile float *sdata, int tid) {
+__device__ void warpReduce(volatile int *sdata, int tid) {
     if (blockSize >= 64) sdata[tid] += sdata[tid + 32];
     if (blockSize >= 32) sdata[tid] += sdata[tid + 16];
     if (blockSize >= 16) sdata[tid] += sdata[tid + 8];
@@ -28,10 +28,10 @@ __device__ void warpReduce(volatile float *sdata, int tid) {
 }
 
 template <unsigned int blockSize>
-__global__ void reduce6(float *g_idata, float *g_odata, const long int n) {
-    extern __shared__ float sdata[];
+__global__ void reduce6(float *g_idata, float *g_odata, const long long int n) {
+    extern __shared__ int sdata[];
     unsigned int tid = threadIdx.x;
-    unsigned long int i = blockIdx.x*(blockSize*2) + tid;
+    unsigned long long int i = blockIdx.x*(blockSize*2) + tid;
     unsigned int gridSize = blockSize*2*gridDim.x;
     sdata[tid] = 0;
     while (i < n) { sdata[tid] += g_idata[i] + g_idata[i+blockSize]; i += gridSize; }
@@ -44,30 +44,23 @@ __global__ void reduce6(float *g_idata, float *g_odata, const long int n) {
     if (tid == 0) g_odata[blockIdx.x] = sdata[0];
 }
 
-float* CreateArray( const int SIZE) {
-    float* float_array = (float*) malloc(sizeof(float) * SIZE);
+int* CreateArray( const long long int SIZE) {
+    int* llint_array = (int*) malloc(sizeof(int) * SIZE);
     for (int i = 0; i < SIZE; i++) {
-        float_array[i] = rand()%100;
+        llint_array[i] = rand()%100;
     }
-    return float_array;
+    return llint_array;
 }
 
-void PrintArray(const int* array, const int SIZE) {
-    for (int i = 0; i < SIZE; i++) {
-        printf("%d ",array[i]);
-    }
-    printf("\n");
-}
-
-long int GetEnvArraySize() {
+long long int GetEnvArraySize() {
     char* array_size_char = getenv("ARRAY_SIZE");
-    long int array_size_int = DEFAULT_ARRAY_SIZE;
+    long long int array_size_int = DEFAULT_ARRAY_SIZE;
     if (array_size_char != NULL) {
-        array_size_int = atoi(array_size_char);
+        array_size_int = atoll(array_size_char);
     } else {
         printf(
             "Переменная среды ARRAY_SIZE не получена, "
-            "используем значение по умолчанию: %ld \n", DEFAULT_ARRAY_SIZE
+            "используем значение по умолчанию: %lld \n", DEFAULT_ARRAY_SIZE
         );
     }
     return array_size_int;
@@ -122,17 +115,17 @@ void CheckCudaError(cudaError_t err){
     }
 }
 
-float SumElementsOfArray(const float* array, const long int SIZE) {
-    float result = 0;
-    for (long int i = 0; i < SIZE; i++) {
+long long int SumElementsOfArray(const int* array, const long long int SIZE) {
+    long long int result = 0;
+    for (long long int i = 0; i < SIZE; i++) {
         result += array[i];
     }
     return result;
 }
 
-void PrintArray(const float* array, const int SIZE) {
-    for (int i = 0; i < SIZE; i++) {
-        printf("%f ",array[i]);
+void PrintArray(const int* array, const long long int SIZE) {
+    for (long long int i = 0; i < SIZE; i++) {
+        printf("%d ",array[i]);
     }
     printf("\n");
 }
@@ -143,14 +136,14 @@ int main(int argc, char** argv) {
 
     srand(time(0));
     //srand(1);
-    const long int ARRAY_SIZE = GetEnvArraySize();
+    const long long int ARRAY_SIZE = GetEnvArraySize();
     const int RUNS = GetEnvRuns();
     const int THREADS = GetEnvThreads();
     //const int BLOCKS = GetEnvBlocks();
     const int BLOCKS = (ARRAY_SIZE + (2 * THREADS) - 1) / (2 * THREADS);
 
     printf("\n\nПараллельная программа\n");
-    printf("Размер массива: %ld\n", ARRAY_SIZE);
+    printf("Размер массива: %lld\n", ARRAY_SIZE);
     printf("Выполнений: %d\n", RUNS);
     printf("Потоков в блоке: %d\n", THREADS);
     printf("Блоков (ДЛЯ ДАННОГО ЗАДАНИЯ НАСТРОЙКА КОЛ-ВА БЛОКОВ ИГНОРИРУЕТСЯ,\n\
@@ -167,34 +160,34 @@ int main(int argc, char** argv) {
     for (int i = 0; i < RUNS; i++) {
 
         // Массив хоста с данными
-        float* host_float_array = NULL;
+        int* host_float_array = NULL;
         host_float_array = CreateArray(ARRAY_SIZE);
 
-        float* host_result_float_array = NULL;
-        host_result_float_array = (float*) malloc(sizeof(float) * result_array_size);
+        int* host_result_float_array = NULL;
+        host_result_float_array = (int*) malloc(sizeof(int) * result_array_size);
 
         clock_gettime(CLOCK_REALTIME, &begin); // Начало таймера
 
         // Выделение глобальной памяти под массив, который будет передан GPU
-        float* device_float_array = NULL;
-        err = cudaMalloc(&device_float_array, ARRAY_SIZE * sizeof(float));
+        int* device_float_array = NULL;
+        err = cudaMalloc(&device_float_array, ARRAY_SIZE * sizeof(int));
         CheckCudaError(err);
-        printf("Глоб массив выделен\n");
+        //printf("Глоб массив выделен\n");
 
         // Выделение глобальной памяти под массив результат, который будет передан GPU
-        float* device_result_float_array = NULL;
-        err = cudaMalloc(&device_result_float_array, sizeof(float) * result_array_size);
+        int* device_result_float_array = NULL;
+        err = cudaMalloc(&device_result_float_array, sizeof(int) * result_array_size);
         CheckCudaError(err);
-        printf("Глоб массив результата выделен\n");
+        //printf("Глоб массив результата выделен\n");
         
         //Копирование массива в GPU
         err = cudaMemcpy(device_float_array,
                          host_float_array,
-                         ARRAY_SIZE * sizeof(float),
+                         ARRAY_SIZE * sizeof(int),
                          cudaMemcpyHostToDevice
                         );
         CheckCudaError(err);
-        printf("Глоб массив скопирован\n");
+        //printf("Глоб массив скопирован\n");
 
         clock_gettime(CLOCK_REALTIME, &end); // Конец таймера
         data_allocation_time += (double)(end.tv_sec - begin.tv_sec) + (double)(end.tv_nsec - begin.tv_nsec)/1e9;
@@ -203,21 +196,22 @@ int main(int argc, char** argv) {
         // Выполнение задачи
         switch (THREADS) {
             case 1024:
-                reduce6<1024><<<BLOCKS, 1024, 1024 * sizeof(float)>>>(device_float_array, device_result_float_array, ARRAY_SIZE);
+                reduce6<1024><<<BLOCKS, 1024, 1024 * sizeof(int)>>>(device_float_array, device_result_float_array, ARRAY_SIZE);
                 break;
             case 512:
-                reduce6<512><<<BLOCKS, 512, 512 * sizeof(float)>>>(device_float_array, device_result_float_array, ARRAY_SIZE);
+                reduce6<512><<<BLOCKS, 512, 512 * sizeof(int)>>>(device_float_array, device_result_float_array, ARRAY_SIZE);
                 break;
             case 256:
-                reduce6<256><<<BLOCKS, 256, 256 * sizeof(float)>>>(device_float_array, device_result_float_array, ARRAY_SIZE);
+                reduce6<256><<<BLOCKS, 256, 256 * sizeof(int)>>>(device_float_array, device_result_float_array, ARRAY_SIZE);
                 break;
             case 128:
-                reduce6<128><<<BLOCKS, 128, 128 * sizeof(float)>>>(device_float_array, device_result_float_array, ARRAY_SIZE);
+                reduce6<128><<<BLOCKS, 128, 128 * sizeof(int)>>>(device_float_array, device_result_float_array, ARRAY_SIZE);
                 break;
         }
+        cudaDeviceSynchronize();
         err = cudaGetLastError();
         CheckCudaError(err);
-        printf("Задача выполнена\n");
+        //printf("Задача выполнена\n");
 
         clock_gettime(CLOCK_REALTIME, &end); // Конец таймера
         exec_time += (double)(end.tv_sec - begin.tv_sec) + (double)(end.tv_nsec - begin.tv_nsec)/1e9;
@@ -226,31 +220,30 @@ int main(int argc, char** argv) {
         // Берём результат от GPU
         err = cudaMemcpy(host_result_float_array,
                          device_result_float_array,
-                         result_array_size * sizeof(float),
+                         result_array_size * sizeof(int),
                          cudaMemcpyDeviceToHost
                         );
         CheckCudaError(err);
-        printf("Результат получен\n");
+        //printf("Результат получен\n");
         
         // Освобождаем глобальную память GPU
         err = cudaFree(device_float_array);
         CheckCudaError(err);
         err = cudaFree(device_result_float_array);
         CheckCudaError(err);
-        printf("Память очищена\n");
+        //printf("Память очищена\n");
 
-        float final_device_res = SumElementsOfArray(host_result_float_array, result_array_size);
+        long long int final_device_res = SumElementsOfArray(host_result_float_array, result_array_size);
 
         clock_gettime(CLOCK_REALTIME, &end); // Конец таймера
         data_allocation_time += (double)(end.tv_sec - begin.tv_sec) + (double)(end.tv_nsec - begin.tv_nsec)/1e9;
         
         //PrintArray(host_result_float_array, result_array_size);
-        //FIXME почему-то финальный результат суммы хоста упирается в 32битный инт
-        float final_host_res = SumElementsOfArray(host_float_array, ARRAY_SIZE);
-        float diff = final_host_res - final_device_res;
-        printf("Погрешность между вычислением на CPU и GPU (CPU - GPU): %f\n", diff);
-        printf("сумма на CPU %f\n", final_host_res);
-        printf("сумма на GPU %f\n", final_device_res);
+        long long int final_host_res = SumElementsOfArray(host_float_array, ARRAY_SIZE);
+        long long int diff = final_host_res - final_device_res;
+        printf("Погрешность между вычислением на CPU и GPU (CPU - GPU): %lld\n", diff);
+        //printf("сумма на CPU %f\n", final_host_res);
+        //printf("сумма на GPU %f\n", final_device_res);
 
         free(host_float_array);
         free(host_result_float_array);
